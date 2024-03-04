@@ -22,6 +22,22 @@
 ### Resources
 These notes capture information from [Borja Balle's Lecture](https://www.youtube.com/watch?v=g-5PPYDiL2k) and [Angluin's L* Paper](https://people.eecs.berkeley.edu/~dawnsong/teaching/s10/papers/angluin87.pdf).
 
+
+## Math Preliminaries
+
+Let $\Sigma$ be an alphabet and we use $\Sigma^*$ to denote a set of all strings strings over $\Sigma$. We use $\epsilon$ to denote the empty string.
+
+A *deterministic finite automaton (DFA)* is a tuple $\text{DFA}(A) = (\Sigma, Q, q_0, \tau, \phi)$
+* $\Sigma$ is a set of input symbols
+* $Q$ is a set of states
+* $\tau: Q \times \Sigma \rightarrow Q$ is a transition function
+* $q_0$ is the initial state
+* $\phi$ is a set of accepting states
+
+A *Hankel Matrix* $H_f \in \mathbb R^{\Sigma^* \times \Sigma^*}$ is a matrix defined by $H_f(p, s) = f(p \cdot s)$, where $f: \Sigma^* \rightarrow \mathbb R$. In this discussion, $H$ is shorthand for a Hankel matrix $H_m$ associated with some implied DFA or Teacher where $m$ is the membership query. 
+
+**Myhill-Nerod Theorem:** The number of distinct rows of a binary Hankel matrix $H$ equals the minimal number of states of a DFA recognizing the language of $H$.
+
 ```python
 # imports
 from automata.fa.nfa import NFA
@@ -76,7 +92,7 @@ plot_hankel(ax, H, prefixes, suffixes)
 plt.show()
 ```
 
-## From Hankel Matrix to DFA
+## From Hankel Matrix to DFA (Hankel Trick Automata Learning)
 
 ```python
 # automata learning via the "Hankel Trick"
@@ -85,6 +101,26 @@ dfa_learned.show_diagram()
 ```
 
 ## Angluin's Algorithm (L*)
+
+
+### Algorithm Description
+
+1. Initialize prefixes and suffixes: $P = \{\epsilon\}, S=\{\epsilon\}$
+2. Maintain a Hankel block $H$ for $P' = P \cup P \Sigma$ and $S$ using membership queries $f$.
+3. Repeat
+  * While $H$ is not closed and consistent
+    *  if $H$ is not closed, add a new prefix $P \Sigma$ to $P$
+    *  if $H$ is not consistent, add a distinguishing suffix to $S$
+  * Construct a DFA $A$ from $H$ and ask the teacher an equivalence query
+    * if yes, terminate
+    * Otherwise, add all prefixes of counter-example $x$ to $P$
+   
+### Complexity
+
+$\mathcal O (n)$ equivalence queries and $\mathcal O(|\Sigma| n^2 L)$ MQs.
+
+Both EQs and MQs are needed for a polynomial time algorithm. Otherwise, exponential time is required.
+
 
 ```python
 import abc
@@ -102,6 +138,7 @@ class Teacher(abc.ABC):
         and looking at the symmetric difference
         """
         pass
+
 
 class DFATeacher(Teacher):
     """teacher that implements queries from a hidden DFA"""
@@ -145,7 +182,6 @@ class RegexTeacher(DFATeacher):
         if len(counterexamples) == 0:
             return None
         return counterexamples[0]
-
 ```
 
 ```python
